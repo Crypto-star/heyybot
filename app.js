@@ -1,80 +1,66 @@
-﻿// Year stamp
+﻿// Update Year
 const yearEl = document.getElementById('year');
-if (yearEl) yearEl.textContent = new Date().getFullYear();
+if (yearEl) {
+  yearEl.textContent = new Date().getFullYear();
+}
 
-// Mobile nav
-const navToggle = document.querySelector('.nav-toggle');
-if (navToggle) navToggle.addEventListener('click', () => {
-  document.querySelector('.nav').classList.toggle('open');
+// Navbar Scroll Effect
+const navbar = document.querySelector('.navbar');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 50) {
+    navbar.classList.add('shadow-sm');
+    navbar.style.background = 'rgba(5, 5, 5, 0.9)';
+  } else {
+    navbar.classList.remove('shadow-sm');
+    navbar.style.background = 'rgba(5, 5, 5, 0.7)';
+  }
 });
 
-// Smooth in-page navigation
-document.querySelectorAll('.js-scroll').forEach(a => {
-  a.addEventListener('click', (e) => {
-    const hash = a.getAttribute('href');
-    if (hash && hash.startsWith('#')) {
-      const target = document.querySelector(hash);
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        document.querySelector('.nav')?.classList.remove('open');
+// Intersection Observer for Fade-in Animations
+const observerOptions = {
+  root: null,
+  rootMargin: '0px',
+  threshold: 0.1
+};
+
+const observer = new IntersectionObserver((entries, observer) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.animationPlayState = 'running';
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+      observer.unobserve(entry.target);
+    }
+  });
+}, observerOptions);
+
+// Observe elements with fade-in-up class that might need manual triggering if CSS animation didn't catch them
+// (CSS animation runs on load, but we can add more scroll reveals here)
+document.querySelectorAll('.fade-in-up').forEach(el => {
+  // If we want to control it via JS, we'd set opacity 0 in CSS and remove the animation property there, 
+  // then add a class here. For now, let's just leave the CSS animation as is for Hero.
+  // We can add a 'reveal' class for other sections.
+});
+
+// Smooth Scroll for Anchor Links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    const targetId = this.getAttribute('href');
+    if (targetId === '#') return;
+
+    const target = document.querySelector(targetId);
+    if (target) {
+      target.scrollIntoView({
+        behavior: 'smooth'
+      });
+
+      // Close mobile menu if open
+      const navbarCollapse = document.querySelector('.navbar-collapse');
+      if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+        const bsCollapse = new bootstrap.Collapse(navbarCollapse);
+        bsCollapse.hide();
       }
     }
   });
 });
-
-// CTA reveal only in content; show phone/email inline beside buttons
-const PHONE_TEXT = '+91 8130812821';
-const EMAIL_TEXT = 'hello@heyybot';
-
-function ensureHint(el) {
-  const group = el.closest('.hero-cta, .cta-stack');
-  if (!group) return null;
-  let hint = group.querySelector('.cta-hint');
-  if (!hint) {
-    hint = document.createElement('span');
-    hint.className = 'cta-hint';
-    hint.setAttribute('role', 'status');
-    hint.setAttribute('aria-live', 'polite');
-    group.appendChild(hint);
-  }
-  return hint;
-}
-
-document.querySelectorAll('.hero-cta a, .cta-stack a').forEach(a => {
-  a.setAttribute('role', 'button');
-  a.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') { e.preventDefault(); a.click(); }
-  });
-});
-
-document.addEventListener('click', (e) => {
-  if (e.target.closest('header') || e.target.closest('.nav')) return;
-  const call = e.target.closest('.call-link');
-  if (call) { e.preventDefault(); const hint = ensureHint(call); if (hint) hint.textContent = PHONE_TEXT; return; }
-  const mail = e.target.closest('.email-link');
-  if (mail) { e.preventDefault(); const hint = ensureHint(mail); if (hint) hint.textContent = EMAIL_TEXT; }
-});
-
-// Resilient image upgrade near viewport (keeps SVG placeholder if asset missing)
-function upgradeImage(img) {
-  const src = img.getAttribute('data-src');
-  const srcset = img.getAttribute('data-srcset');
-  const sizes = img.getAttribute('data-sizes');
-  if (!src && !srcset) return;
-  const probe = new Image();
-  if (srcset) probe.srcset = srcset;
-  if (sizes) probe.sizes = sizes;
-  probe.onload = () => { if (srcset) img.srcset = srcset; if (sizes) img.sizes = sizes; if (src) img.src = src; };
-  probe.onerror = () => {};
-  probe.src = src || (srcset ? srcset.split(' ')[0] : '');
-}
-
-if ('IntersectionObserver' in window) {
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => { if (entry.isIntersecting) { upgradeImage(entry.target); io.unobserve(entry.target); } });
-  }, { rootMargin: '200px 0px' });
-  document.querySelectorAll('img.img-auto').forEach(img => io.observe(img));
-} else {
-  document.querySelectorAll('img.img-auto').forEach(upgradeImage);
-}
